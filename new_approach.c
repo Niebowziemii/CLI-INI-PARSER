@@ -60,27 +60,29 @@ int main(int argc, char **argv)
             end = i - 1;
             if (iter == 1)
             {
-                section1 = (char *)malloc(end - begin + 1);
+                section1 = (char *)calloc(i - begin + 1, sizeof(char) * (i - begin + 1));
                 strncpy(section1, (argv[3]), i);
             }
             if (iter == 2)
             {
                 operatorr = argv[3][i];
-                key1 = (char *)malloc(i - begin + 1);
+                key1 = (char *)calloc(i - begin + 1, sizeof(char) * (i - begin + 1));
                 strncpy(key1, (argv[3] + begin), i - begin);
+                // printf("%d %d %d ", begin, i, end);
             }
             if (iter == 3)
             {
-                section2 = (char *)malloc(i - begin + 1);
+                section2 = (char *)calloc(i - begin + 1, sizeof(char) * (i - begin + 1));
                 strncpy(section2, (argv[3] + begin), i - begin);
             }
         }
     }
 
-    key2 = (char *)malloc(i - end - 1);
+    key2 = (char *)calloc(i - end - 1, sizeof(char) * (i - begin + 1));
     strcpy(key2, argv[3] + end + 2);
-    char *value1 = inifile_get(&config, section1, key1);
-    char *value2 = inifile_get(&config, section2, key2);
+    // printf("%s %s %s %s", section1, section2, key1, key2);
+    const char *value1 = inifile_get(&config, section1, key1);
+    const char *value2 = inifile_get(&config, section2, key2);
     if (operatorr == '+')
     {
 
@@ -101,7 +103,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("This operation on given key types is forbidden! You cannot subtract [string] elements");
+            printf("This operation on given key types is forbidden! You cannot subtract [string] elements!");
             return EXIT_FAILURE;
         }
     }
@@ -113,7 +115,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("This operation on given key types is forbidden! You cannot multiply strings!");
+            printf("This operation on given key types is forbidden! You cannot multiply [string] elements!");
             return EXIT_FAILURE;
         }
     }
@@ -125,7 +127,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("This operation on given key types is forbidden! You cannot divide strings!");
+            printf("This operation on given key types is forbidden! You cannot divide [string] elements!");
             return EXIT_FAILURE;
         }
     }
