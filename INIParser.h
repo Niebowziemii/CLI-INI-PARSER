@@ -1,13 +1,18 @@
 /*MIT License
+
 Copyright(c) 2020 Franciszek Olejnik
+https://github.com/FrankOil/INIParser
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this softwareand associated documentation files(the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and /or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions
+
 The above copyright noticeand this permission notice shall be included in all
 copies or substantial portions of the Software.
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -32,7 +37,7 @@ SOFTWARE.
 
 #ifdef INIPARSER_EXIT_SUCCESS
 #undef INIPARSER_EXIT_SUCCESS
-#endif 
+#endif
 
 #define INIPARSER_EXIT_SUCCESS 0
 
@@ -50,13 +55,13 @@ SOFTWARE.
 
 #ifdef INIPARSER_SECTION_BUFFER_LIMIT
 #undef INIPARSER_SECTION_BUFFER_LIMIT
-#endif 
+#endif
 
 #define INIPARSER_SECTION_BUFFER_LIMIT 1024
 
 #ifdef INIPARSER_MASTER_BUFFER_LIMIT
 #undef INIPARSER_MASTER_BUFFER_LIMIT
-#endif 
+#endif
 
 #define INIPARSER_MASTER_BUFFER_LIMIT 65535
 
@@ -79,23 +84,23 @@ typedef struct INIParserTextBuffer
 {
 	unsigned int size;
 	unsigned int capacity;
-	char* buffer;
+	char *buffer;
 } INIParserTextBuffer;
 
-static void _iniparser_textbuffer_clear(INIParserTextBuffer* line_buffer)
+static void _iniparser_textbuffer_clear(INIParserTextBuffer *line_buffer)
 {
 	line_buffer->size = INIPARSER_NULL;
 
 	memset(line_buffer->buffer, INIPARSER_NULL, line_buffer->capacity);
 }
 
-static int _iniparser_textbuffer_create(INIParserTextBuffer* line_buffer)
+static int _iniparser_textbuffer_create(INIParserTextBuffer *line_buffer)
 {
 	line_buffer->size = INIPARSER_NULL;
 
 	line_buffer->capacity = INIPARSER_DEFAULT_TEXT_BUFFER_CAPACITY;
 
-	line_buffer->buffer = (char*)malloc(sizeof(char) * INIPARSER_DEFAULT_TEXT_BUFFER_CAPACITY);
+	line_buffer->buffer = (char *)malloc(sizeof(char) * INIPARSER_DEFAULT_TEXT_BUFFER_CAPACITY);
 
 	if (line_buffer->buffer == INIPARSER_NULL)
 	{
@@ -109,7 +114,7 @@ static int _iniparser_textbuffer_create(INIParserTextBuffer* line_buffer)
 	}
 }
 
-static void _iniparser_textbuffer_destroy(INIParserTextBuffer* line_buffer)
+static void _iniparser_textbuffer_destroy(INIParserTextBuffer *line_buffer)
 {
 	line_buffer->capacity = INIPARSER_NULL;
 
@@ -120,9 +125,9 @@ static void _iniparser_textbuffer_destroy(INIParserTextBuffer* line_buffer)
 	line_buffer->buffer = INIPARSER_NULL;
 }
 
-static int _iniparser_textbuffer_resize(INIParserTextBuffer* line_buffer, unsigned int new_capacity)
+static int _iniparser_textbuffer_resize(INIParserTextBuffer *line_buffer, unsigned int new_capacity)
 {
-	char* new_buffer = (char*)malloc(sizeof(char) * new_capacity);
+	char *new_buffer = (char *)malloc(sizeof(char) * new_capacity);
 
 	if (new_buffer == INIPARSER_NULL)
 	{
@@ -142,7 +147,7 @@ static int _iniparser_textbuffer_resize(INIParserTextBuffer* line_buffer, unsign
 	return INIPARSER_EXIT_SUCCESS;
 }
 
-static int _iniparser_textbuffer_push(INIParserTextBuffer* line_buffer, char character)
+static int _iniparser_textbuffer_push(INIParserTextBuffer *line_buffer, char character)
 {
 	if ((line_buffer->capacity - 1) == line_buffer->size && _iniparser_textbuffer_resize(line_buffer, line_buffer->capacity * 2))
 	{
@@ -154,7 +159,7 @@ static int _iniparser_textbuffer_push(INIParserTextBuffer* line_buffer, char cha
 	return INIPARSER_EXIT_SUCCESS;
 }
 
-static const char* _iniparser_textbuffer_get_buffer(INIParserTextBuffer* line_buffer)
+static const char *_iniparser_textbuffer_get_buffer(INIParserTextBuffer *line_buffer)
 {
 	line_buffer->buffer[line_buffer->size + 1] = '\0';
 
@@ -163,17 +168,17 @@ static const char* _iniparser_textbuffer_get_buffer(INIParserTextBuffer* line_bu
 
 typedef struct INIParserSectionContainerEntry
 {
-	char* key;
-	char* value;
-	struct INIParserSectionContainerEntry* next;
+	char *key;
+	char *value;
+	struct INIParserSectionContainerEntry *next;
 } INIParserSectionContainerEntry;
 
 typedef struct INIParserSectionContainer
 {
-	INIParserSectionContainerEntry** entries;
+	INIParserSectionContainerEntry **entries;
 } INIParserSectionContainer;
 
-static int _iniparser_section_container_create(INIParserSectionContainer* container)
+static int _iniparser_section_container_create(INIParserSectionContainer *container)
 {
 	if (container == INIPARSER_NULL)
 	{
@@ -182,7 +187,7 @@ static int _iniparser_section_container_create(INIParserSectionContainer* contai
 		return INIPARSER_EXIT_FAILURE;
 	}
 
-	container->entries = (INIParserSectionContainerEntry**)malloc(sizeof(INIParserSectionContainerEntry) * INIPARSER_SECTION_BUFFER_LIMIT);
+	container->entries = (INIParserSectionContainerEntry **)malloc(sizeof(INIParserSectionContainerEntry) * INIPARSER_SECTION_BUFFER_LIMIT);
 
 	if (container->entries == INIPARSER_NULL)
 	{
@@ -199,9 +204,9 @@ static int _iniparser_section_container_create(INIParserSectionContainer* contai
 	return INIPARSER_EXIT_SUCCESS;
 }
 
-static int _iniparser_section_container_create_entry(INIParserSectionContainerEntry** entry, const char* key, const char* value)
+static int _iniparser_section_container_create_entry(INIParserSectionContainerEntry **entry, const char *key, const char *value)
 {
-	(*entry) = (INIParserSectionContainerEntry*)malloc(sizeof(INIParserSectionContainerEntry));
+	(*entry) = (INIParserSectionContainerEntry *)malloc(sizeof(INIParserSectionContainerEntry));
 
 	if ((*entry) == INIPARSER_NULL)
 	{
@@ -210,9 +215,9 @@ static int _iniparser_section_container_create_entry(INIParserSectionContainerEn
 		return INIPARSER_EXIT_FAILURE;
 	}
 
-	(*entry)->key = (char*)malloc(strlen(key) + 1);
+	(*entry)->key = (char *)malloc(strlen(key) + 1);
 
-	(*entry)->value = (char*)malloc(strlen(value) + 1);
+	(*entry)->value = (char *)malloc(strlen(value) + 1);
 
 	(*entry)->next = INIPARSER_NULL;
 
@@ -243,7 +248,7 @@ static int _iniparser_section_container_create_entry(INIParserSectionContainerEn
 	return INIPARSER_EXIT_SUCCESS;
 }
 
-static int _iniparser_section_container_generate_index(const char* key)
+static int _iniparser_section_container_generate_index(const char *key)
 {
 	unsigned long int value_buffer = 0;
 
@@ -260,13 +265,13 @@ static int _iniparser_section_container_generate_index(const char* key)
 }
 
 #ifdef _MSC_VER
-#pragma warning( push )
-#pragma warning( disable : 6001)
+#pragma warning(push)
+#pragma warning(disable : 6001)
 #endif
-static void _iniparser_section_container_destroy(INIParserSectionContainer* container)
+static void _iniparser_section_container_destroy(INIParserSectionContainer *container)
 {
-	INIParserSectionContainerEntry* next = INIPARSER_NULL;
-	INIParserSectionContainerEntry* prev = INIPARSER_NULL;
+	INIParserSectionContainerEntry *next = INIPARSER_NULL;
+	INIParserSectionContainerEntry *prev = INIPARSER_NULL;
 
 	for (unsigned int i = 0; i < INIPARSER_SECTION_BUFFER_LIMIT; i++)
 	{
@@ -297,10 +302,10 @@ static void _iniparser_section_container_destroy(INIParserSectionContainer* cont
 	container->entries = INIPARSER_NULL;
 }
 #ifdef _MSC_VER
-#pragma warning( pop ) 
+#pragma warning(pop)
 #endif
 
-static int _iniparser_section_container_set(INIParserSectionContainer* container, const char* key, const char* value)
+static int _iniparser_section_container_set(INIParserSectionContainer *container, const char *key, const char *value)
 {
 	if (container == INIPARSER_NULL)
 	{
@@ -311,7 +316,7 @@ static int _iniparser_section_container_set(INIParserSectionContainer* container
 
 	unsigned int index = _iniparser_section_container_generate_index(key);
 
-	INIParserSectionContainerEntry* key_value = INIPARSER_NULL;
+	INIParserSectionContainerEntry *key_value = INIPARSER_NULL;
 
 	if (_iniparser_section_container_create_entry(&key_value, key, value))
 	{
@@ -324,9 +329,9 @@ static int _iniparser_section_container_set(INIParserSectionContainer* container
 	}
 	else
 	{
-		INIParserSectionContainerEntry* entry = container->entries[index];
+		INIParserSectionContainerEntry *entry = container->entries[index];
 
-		INIParserSectionContainerEntry* prev = INIPARSER_NULL;
+		INIParserSectionContainerEntry *prev = INIPARSER_NULL;
 
 		while (entry != NULL)
 		{
@@ -354,7 +359,7 @@ static int _iniparser_section_container_set(INIParserSectionContainer* container
 	return INIPARSER_EXIT_SUCCESS;
 }
 
-static const char* _iniparser_section_container_get(INIParserSectionContainer* container, const char* key)
+static const char *_iniparser_section_container_get(INIParserSectionContainer *container, const char *key)
 {
 	if (container == INIPARSER_NULL)
 	{
@@ -365,7 +370,7 @@ static const char* _iniparser_section_container_get(INIParserSectionContainer* c
 
 	unsigned int index = _iniparser_section_container_generate_index(key);
 
-	INIParserSectionContainerEntry* entry = container->entries[index];
+	INIParserSectionContainerEntry *entry = container->entries[index];
 
 	if (entry == INIPARSER_NULL)
 	{
@@ -387,17 +392,17 @@ static const char* _iniparser_section_container_get(INIParserSectionContainer* c
 
 typedef struct INIParserMasterContainerEntry
 {
-	char* name;
-	INIParserSectionContainer* section;
-	struct INIParserMasterContainerEntry* next;
+	char *name;
+	INIParserSectionContainer *section;
+	struct INIParserMasterContainerEntry *next;
 } INIParserMasterContainerEntry;
 
 typedef struct INIParserMasterContainer
 {
-	INIParserMasterContainerEntry** entries;
+	INIParserMasterContainerEntry **entries;
 } INIParserMasterContainer;
 
-static int _iniparser_master_container_create(INIParserMasterContainer* container)
+static int _iniparser_master_container_create(INIParserMasterContainer *container)
 {
 	if (container == INIPARSER_NULL)
 	{
@@ -406,7 +411,7 @@ static int _iniparser_master_container_create(INIParserMasterContainer* containe
 		return INIPARSER_EXIT_FAILURE;
 	}
 
-	container->entries = (INIParserMasterContainerEntry**)malloc(sizeof(INIParserMasterContainerEntry) * INIPARSER_MASTER_BUFFER_LIMIT);
+	container->entries = (INIParserMasterContainerEntry **)malloc(sizeof(INIParserMasterContainerEntry) * INIPARSER_MASTER_BUFFER_LIMIT);
 
 	if (container->entries == INIPARSER_NULL)
 	{
@@ -423,9 +428,9 @@ static int _iniparser_master_container_create(INIParserMasterContainer* containe
 	return INIPARSER_EXIT_SUCCESS;
 }
 
-static int _iniparser_master_container_create_entry(INIParserMasterContainerEntry** entry, const char* name)
+static int _iniparser_master_container_create_entry(INIParserMasterContainerEntry **entry, const char *name)
 {
-	*entry = (INIParserMasterContainerEntry*)malloc(sizeof(INIParserMasterContainerEntry));
+	*entry = (INIParserMasterContainerEntry *)malloc(sizeof(INIParserMasterContainerEntry));
 
 	if (entry == INIPARSER_NULL)
 	{
@@ -434,9 +439,9 @@ static int _iniparser_master_container_create_entry(INIParserMasterContainerEntr
 		return INIPARSER_EXIT_FAILURE;
 	}
 
-	(*entry)->name = (char*)malloc(strlen(name) + 1);
+	(*entry)->name = (char *)malloc(strlen(name) + 1);
 
-	INIParserSectionContainer* new_section = (INIParserSectionContainer*)malloc(sizeof(INIParserSectionContainer));
+	INIParserSectionContainer *new_section = (INIParserSectionContainer *)malloc(sizeof(INIParserSectionContainer));
 
 	if (_iniparser_section_container_create(new_section))
 	{
@@ -463,7 +468,7 @@ static int _iniparser_master_container_create_entry(INIParserMasterContainerEntr
 	return INIPARSER_EXIT_SUCCESS;
 }
 
-static int _iniparser_master_container_generate_index(const char* key)
+static int _iniparser_master_container_generate_index(const char *key)
 {
 	unsigned long int value_buffer = 0;
 
@@ -479,10 +484,10 @@ static int _iniparser_master_container_generate_index(const char* key)
 	return value_buffer % INIPARSER_MASTER_BUFFER_LIMIT;
 }
 
-static void _iniparser_master_container_destroy(INIParserMasterContainer* container)
+static void _iniparser_master_container_destroy(INIParserMasterContainer *container)
 {
-	INIParserMasterContainerEntry* next = INIPARSER_NULL;
-	INIParserMasterContainerEntry* prev = INIPARSER_NULL;
+	INIParserMasterContainerEntry *next = INIPARSER_NULL;
+	INIParserMasterContainerEntry *prev = INIPARSER_NULL;
 
 	for (unsigned int i = 0; i < INIPARSER_MASTER_BUFFER_LIMIT; i++)
 	{
@@ -515,7 +520,7 @@ static void _iniparser_master_container_destroy(INIParserMasterContainer* contai
 	container->entries = INIPARSER_NULL;
 }
 
-static INIParserSectionContainer* _iniparser_master_container_create_section(INIParserMasterContainer* container, const char* name)
+static INIParserSectionContainer *_iniparser_master_container_create_section(INIParserMasterContainer *container, const char *name)
 {
 	if (container == INIPARSER_NULL)
 	{
@@ -526,7 +531,7 @@ static INIParserSectionContainer* _iniparser_master_container_create_section(INI
 
 	unsigned int index = _iniparser_master_container_generate_index(name);
 
-	INIParserMasterContainerEntry* section = INIPARSER_NULL;
+	INIParserMasterContainerEntry *section = INIPARSER_NULL;
 
 	if (_iniparser_master_container_create_entry(&section, name))
 	{
@@ -541,9 +546,9 @@ static INIParserSectionContainer* _iniparser_master_container_create_section(INI
 	}
 	else
 	{
-		INIParserMasterContainerEntry* entry = container->entries[index];
+		INIParserMasterContainerEntry *entry = container->entries[index];
 
-		INIParserMasterContainerEntry* prev = INIPARSER_NULL;
+		INIParserMasterContainerEntry *prev = INIPARSER_NULL;
 
 		while (entry != NULL)
 		{
@@ -573,7 +578,7 @@ static INIParserSectionContainer* _iniparser_master_container_create_section(INI
 	return section->section;
 }
 
-static INIParserSectionContainer* _iniparser_master_container_get_section(INIParserMasterContainer* container, const char* name)
+static INIParserSectionContainer *_iniparser_master_container_get_section(INIParserMasterContainer *container, const char *name)
 {
 	if (container == INIPARSER_NULL)
 	{
@@ -584,7 +589,7 @@ static INIParserSectionContainer* _iniparser_master_container_get_section(INIPar
 
 	unsigned int index = _iniparser_master_container_generate_index(name);
 
-	INIParserMasterContainerEntry* entry = container->entries[index];
+	INIParserMasterContainerEntry *entry = container->entries[index];
 
 	if (entry == INIPARSER_NULL)
 	{
@@ -608,7 +613,7 @@ static INIParserSectionContainer* _iniparser_master_container_get_section(INIPar
 	return INIPARSER_NULL;
 }
 
-static int _iniparser_secure_file_open(FILE** file, const char* file_path)
+static int _iniparser_secure_file_open(FILE **file, const char *file_path)
 {
 #if INIPARSER_SECURE_FOPEN == 1
 	errno_t error = fopen_s(&(*file), file_path, "r");
@@ -631,8 +636,9 @@ static int _iniparser_secure_file_open(FILE** file, const char* file_path)
 	return INIPARSER_EXIT_SUCCESS;
 }
 
-typedef struct INIFile {
-	INIParserMasterContainer* data;
+typedef struct INIFile
+{
+	INIParserMasterContainer *data;
 } INIFile;
 
 #ifdef INIPARSER_IS_NEWLINE
@@ -665,8 +671,10 @@ typedef struct INIFile {
 
 #define INIPARSER_IS_EQUALS_SIGN(CHARACTER) (CHARACTER == '=')
 
-static inline int _iniparser_whitespace_char(char character) {
-	switch (character) {
+static inline int _iniparser_whitespace_char(char character)
+{
+	switch (character)
+	{
 	case ' ':
 	case '\v':
 	case '\t':
@@ -680,27 +688,45 @@ static inline int _iniparser_whitespace_char(char character) {
 	}
 }
 
-static inline int _iniparser_is_section_key_char(char character) {
-	if (48 <= character && character <= 57) {
+static inline int _iniparser_is_section_key_char(char character)
+{
+	if (48 <= character && character <= 57)
+	{
 		return 1;
 	}
 
-	if (65 <= character && character <= 90) {
+	if (65 <= character && character <= 90)
+	{
 		return 1;
 	}
 
-	if (97 <= character && character <= 122) {
+	if (97 <= character && character <= 122)
+	{
 		return 1;
 	}
 
 	return 0;
 }
 
-static int _iniparser_key_process(FILE* file, INIParserTextBuffer* buffer, char first_character, INIParserSectionContainer** current_section)
+static int _iniparser_key_process(FILE *file, INIParserTextBuffer *buffer, char first_character, INIParserSectionContainer **current_section)
 {
 	int current_character = INIPARSER_NULL;
 
 	_iniparser_textbuffer_clear(buffer);
+
+	if (INIPARSER_IS_EQUALS_SIGN(first_character))
+	{
+		fprintf(stderr, "\n[INIParser] Error: Key name cannot contain be empty.\n");
+
+		return INIPARSER_EXIT_FAILURE;
+	}
+
+	if (!_iniparser_is_section_key_char(first_character))
+	{
+		fprintf(stderr, "\n[INIParser] Error: Key name cannot contain characters other than letters and digits.\n");
+
+		return INIPARSER_EXIT_FAILURE;
+	}
 
 	if (_iniparser_textbuffer_push(buffer, first_character))
 	{
@@ -740,13 +766,13 @@ static int _iniparser_key_process(FILE* file, INIParserTextBuffer* buffer, char 
 			return INIPARSER_EXIT_FAILURE;
 		}
 
-		if (_iniparser_textbuffer_push(buffer, current_character))
+		if (!is_end && _iniparser_textbuffer_push(buffer, current_character))
 		{
 			return INIPARSER_EXIT_FAILURE;
 		}
 	}
 
-	char* key = (char*)malloc(buffer->size + 1);
+	char *key = (char *)malloc(buffer->size + 1);
 
 #if INIPARSER_SECURE_STRCPY == 1
 	errno_t error = strcpy_s(key, buffer->size + 1, _iniparser_textbuffer_get_buffer(buffer));
@@ -786,7 +812,7 @@ static int _iniparser_key_process(FILE* file, INIParserTextBuffer* buffer, char 
 	return INIPARSER_EXIT_SUCCESS;
 }
 
-static int _iniparser_section_process(FILE* file, INIParserTextBuffer* buffer, INIParserSectionContainer** current_section, INIParserMasterContainer* master)
+static int _iniparser_section_process(FILE *file, INIParserTextBuffer *buffer, INIParserSectionContainer **current_section, INIParserMasterContainer *master)
 {
 	int current_character = INIPARSER_NULL;
 
@@ -839,7 +865,7 @@ static int _iniparser_section_process(FILE* file, INIParserTextBuffer* buffer, I
 	}
 }
 
-static void _iniparser_skip_line(FILE* file)
+static void _iniparser_skip_line(FILE *file)
 {
 	int current_character = INIPARSER_NULL;
 
@@ -852,7 +878,7 @@ static void _iniparser_skip_line(FILE* file)
 	}
 }
 
-static int _iniparser_config_process(FILE* file, INIFile* ini_file)
+static int _iniparser_config_process(FILE *file, INIFile *ini_file)
 {
 	int current_character = INIPARSER_NULL;
 
@@ -863,7 +889,7 @@ static int _iniparser_config_process(FILE* file, INIFile* ini_file)
 		return INIPARSER_EXIT_FAILURE;
 	}
 
-	INIParserMasterContainer* data = (INIParserMasterContainer*)malloc(sizeof(INIParserMasterContainer));
+	INIParserMasterContainer *data = (INIParserMasterContainer *)malloc(sizeof(INIParserMasterContainer));
 
 	if (_iniparser_master_container_create(data))
 	{
@@ -872,7 +898,7 @@ static int _iniparser_config_process(FILE* file, INIFile* ini_file)
 
 	ini_file->data = data;
 
-	INIParserSectionContainer* current_section = INIPARSER_NULL;
+	INIParserSectionContainer *current_section = INIPARSER_NULL;
 
 	while ((current_character = fgetc(file)) != EOF)
 	{
@@ -931,9 +957,9 @@ static int _iniparser_config_process(FILE* file, INIFile* ini_file)
 	return INIPARSER_EXIT_SUCCESS;
 }
 
-int inifile_create(INIFile* ini_file, const char* file_path)
+int inifile_create(INIFile *ini_file, const char *file_path)
 {
-	FILE* file = INIPARSER_NULL;
+	FILE *file = INIPARSER_NULL;
 
 	if (_iniparser_secure_file_open(&file, file_path))
 	{
@@ -950,7 +976,7 @@ int inifile_create(INIFile* ini_file, const char* file_path)
 	return INIPARSER_EXIT_SUCCESS;
 };
 
-void inifile_destroy(INIFile* ini_file)
+void inifile_destroy(INIFile *ini_file)
 {
 	if (ini_file->data != INIPARSER_NULL)
 	{
@@ -962,13 +988,13 @@ void inifile_destroy(INIFile* ini_file)
 	ini_file->data = INIPARSER_NULL;
 };
 
-const char* inifile_get(INIFile* ini_file, const char* section, const char* key)
+const char *inifile_get(INIFile *ini_file, const char *section, const char *key)
 {
-	INIParserSectionContainer* section_data = _iniparser_master_container_get_section(ini_file->data, section);
+	INIParserSectionContainer *section_data = _iniparser_master_container_get_section(ini_file->data, section);
 
 	if (section_data != INIPARSER_NULL)
 	{
-		const char * value =  _iniparser_section_container_get(section_data, key);
+		const char *value = _iniparser_section_container_get(section_data, key);
 
 		if (value != INIPARSER_NULL)
 		{
@@ -979,7 +1005,7 @@ const char* inifile_get(INIFile* ini_file, const char* section, const char* key)
 			fprintf(stderr, "\n[INIParser] Error: Failed to find key: '%s' in section: '%s'.\n", key, section);
 
 			fprintf(stderr, "[INIParser] at inifile_get() where section='%s', key='%s'.\n", section, key);
-			
+
 			return INIPARSER_NULL;
 		}
 	}
@@ -991,21 +1017,21 @@ const char* inifile_get(INIFile* ini_file, const char* section, const char* key)
 	}
 };
 
-void inifile_print_key(INIFile* ini_file, const char* section, const char* key)
+void inifile_print_key(INIFile *ini_file, const char *section, const char *key)
 {
-	const char* value = inifile_get(ini_file, section, key);
+	const char *value = inifile_get(ini_file, section, key);
 
 	if (value != INIPARSER_NULL)
 	{
-		printf("key: '%s' value: '%s' type: 'string'\n", key, value);
+		printf("key: '%s' value: '%s'\n", key, value);
 	}
 };
 
-
-/*
+	/*
 int inifile_set(INIFile* ini_file, const char* section, const char* key, const char* value)
 {
 	INIParserSectionContainer* section_data = _iniparser_master_container_get_section(ini_file->data, section);
+
 	if (section_data != INIPARSER_NULL)
 	{
 		_iniparser_section_container_set(section_data, key, value);
@@ -1013,20 +1039,23 @@ int inifile_set(INIFile* ini_file, const char* section, const char* key, const c
 	else
 	{
 		fprintf(stderr, "[INIParser] at inifile_set() where section='%s', key='%s' value='%s'.\n", section, key, value);
+
 		return INIPARSER_NULL;
 	}
 };
 */
 
-/*
+	/*
 static inline void _inifile_display_section(INIParserSectionContainer* section_data, const char* name)
 {
 	printf("section: '%s'\n", name);
+
 	for (unsigned int i = 0; i < INIPARSER_SECTION_BUFFER_LIMIT; i++)
 	{
 		if (section_data->entries[i])
 		{
 			_inifile_display_key(section_data->entries[i]->key, section_data->entries[i]->value);
+
 			//TODO
 			//ADD NEXT
 		}
@@ -1034,7 +1063,7 @@ static inline void _inifile_display_section(INIParserSectionContainer* section_d
 }
 */
 
-/*
+	/*
 void inifile_print(INIFile* ini_file)
 {
 	for (unsigned int i = 0; i < INIPARSER_MASTER_BUFFER_LIMIT; i++)
@@ -1042,7 +1071,9 @@ void inifile_print(INIFile* ini_file)
 		if (ini_file->data->entries[i])
 		{
 			INIParserSectionContainer* section_data = ini_file->data->entries[i]->section;
+
 			_inifile_display_section(section_data, ini_file->data->entries[i]->name);
+
 			//TODO
 			//ADD NEXT
 		}
@@ -1050,10 +1081,11 @@ void inifile_print(INIFile* ini_file)
 };
 */
 
-/*
+	/*
 void inifile_print_section(INIFile* ini_file, const char* name)
 {
 	INIParserSectionContainer* section_data = _iniparser_master_container_get_section(ini_file->data, name);
+
 	if (section_data != INIPARSER_NULL)
 	{
 		_inifile_display_section(section_data, name);
@@ -1061,10 +1093,11 @@ void inifile_print_section(INIFile* ini_file, const char* name)
 };
 */
 
-/*
+	/*
 int inifile_save(const char* file_path)
 {
 	//TODO CALL GENERATE DATA 
+
 	return INIPARSER_EXIT_SUCCESS;
 };
 */
