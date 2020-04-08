@@ -1,17 +1,13 @@
 /*MIT License
-
 Copyright(c) 2020 Franciszek Olejnik
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this softwareand associated documentation files(the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and /or sell
 copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions :
-
+furnished to do so, subject to the following conditions
 The above copyright noticeand this permission notice shall be included in all
 copies or substantial portions of the Software.
-
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -99,7 +95,7 @@ static int _iniparser_textbuffer_create(INIParserTextBuffer* line_buffer)
 
 	line_buffer->capacity = INIPARSER_DEFAULT_TEXT_BUFFER_CAPACITY;
 
-	line_buffer->buffer = (char*)calloc(INIPARSER_DEFAULT_TEXT_BUFFER_CAPACITY, sizeof(char) * INIPARSER_DEFAULT_TEXT_BUFFER_CAPACITY);
+	line_buffer->buffer = (char*)malloc(sizeof(char) * INIPARSER_DEFAULT_TEXT_BUFFER_CAPACITY);
 
 	if (line_buffer->buffer == INIPARSER_NULL)
 	{
@@ -126,10 +122,7 @@ static void _iniparser_textbuffer_destroy(INIParserTextBuffer* line_buffer)
 
 static int _iniparser_textbuffer_resize(INIParserTextBuffer* line_buffer, unsigned int new_capacity)
 {
-	//TODO
-	//test if malloc is enought
-
-	char* new_buffer = (char*)calloc(new_capacity, sizeof(char) * new_capacity);
+	char* new_buffer = (char*)malloc(sizeof(char) * new_capacity);
 
 	if (new_buffer == INIPARSER_NULL)
 	{
@@ -164,9 +157,6 @@ static int _iniparser_textbuffer_push(INIParserTextBuffer* line_buffer, char cha
 static const char* _iniparser_textbuffer_get_buffer(INIParserTextBuffer* line_buffer)
 {
 	line_buffer->buffer[line_buffer->size + 1] = '\0';
-
-	//TODO
-	//Resize to content size
 
 	return line_buffer->buffer;
 }
@@ -344,27 +334,11 @@ static int _iniparser_section_container_set(INIParserSectionContainer* container
 			{
 				free(entry->value);
 
-				entry->value = (char*)malloc(strlen(value) + 1);
+				entry->value = key_value->value;
 
-				if (entry->value == INIPARSER_NULL)
-				{
-					fprintf(stderr, "\n[INIParser] Error: Out of memory.\n");
+				free(key_value->key);
 
-					return INIPARSER_EXIT_FAILURE;
-				}
-
-#if INIPARSER_SECURE_STRCPY == 1
-				errno_t error = strcpy_s(entry->value, strlen(value) + 1, value);
-
-				if (error != 0)
-				{
-					fprintf(stderr, "\n[INIParser] Error: An error occured while copying data.\n");
-
-					return INIPARSER_EXIT_FAILURE;
-				}
-#else
-				strcpy(entry->value, value);
-#endif
+				free(key_value);
 
 				return INIPARSER_EXIT_SUCCESS;
 			}
@@ -565,8 +539,36 @@ static INIParserSectionContainer* _iniparser_master_container_create_section(INI
 
 		return section->section;
 	}
+	else
+	{
+		INIParserMasterContainerEntry* entry = container->entries[index];
 
-	//TODO OVERRIDE OR APPEND MODE
+		INIParserMasterContainerEntry* prev = INIPARSER_NULL;
+
+		while (entry != NULL)
+		{
+			if (strcmp(entry->name, name) == 0)
+			{
+				_iniparser_section_container_destroy(entry->section);
+
+				free(entry->section);
+
+				entry->section = section->section;
+
+				free(section->name);
+
+				free(section);
+
+				return entry->section;
+			}
+
+			prev = entry;
+
+			entry = prev->next;
+		}
+
+		prev->next = section;
+	}
 
 	return section->section;
 }
@@ -663,7 +665,7 @@ typedef struct INIFile {
 
 #define INIPARSER_IS_EQUALS_SIGN(CHARACTER) (CHARACTER == '=')
 
-static inline int _iniparser_left_trim(char character) {
+static inline int _iniparser_whitespace_char(char character) {
 	switch (character) {
 	case ' ':
 	case '\v':
@@ -691,10 +693,6 @@ static inline int _iniparser_is_section_key_char(char character) {
 		return 1;
 	}
 
-	if (character == 95) {
-		return 1;
-	}
-
 	return 0;
 }
 
@@ -708,6 +706,8 @@ static int _iniparser_key_process(FILE* file, INIParserTextBuffer* buffer, char 
 	{
 		return INIPARSER_EXIT_FAILURE;
 	}
+
+	int is_end = INIPARSER_NULL;
 
 	while ((current_character = fgetc(file)) != EOF)
 	{
@@ -723,9 +723,21 @@ static int _iniparser_key_process(FILE* file, INIParserTextBuffer* buffer, char 
 			break;
 		}
 
-		if (!_iniparser_is_section_key_char(current_character))
+		if (!is_end && _iniparser_whitespace_char(current_character))
+		{
+			is_end = 1;
+		}
+
+		if (is_end && _iniparser_whitespace_char(current_character))
 		{
 			continue;
+		}
+
+		if (is_end || !_iniparser_is_section_key_char(current_character))
+		{
+			fprintf(stderr, "\n[INIParser] Error: Key name cannot contain characters other than letters and digits.\n");
+
+			return INIPARSER_EXIT_FAILURE;
 		}
 
 		if (_iniparser_textbuffer_push(buffer, current_character))
@@ -734,10 +746,10 @@ static int _iniparser_key_process(FILE* file, INIParserTextBuffer* buffer, char 
 		}
 	}
 
-	char* key = (char*)malloc(strlen(_iniparser_textbuffer_get_buffer(buffer)) + 1);
+	char* key = (char*)malloc(buffer->size + 1);
 
 #if INIPARSER_SECURE_STRCPY == 1
-	errno_t error = strcpy_s(key, strlen(_iniparser_textbuffer_get_buffer(buffer)) + 1, _iniparser_textbuffer_get_buffer(buffer));
+	errno_t error = strcpy_s(key, buffer->size + 1, _iniparser_textbuffer_get_buffer(buffer));
 
 	if (error != 0)
 	{
@@ -766,10 +778,6 @@ static int _iniparser_key_process(FILE* file, INIParserTextBuffer* buffer, char 
 	}
 
 	_iniparser_section_container_set((*current_section), key, _iniparser_textbuffer_get_buffer(buffer));
-
-	//TODO
-
-	//handle empty value
 
 	free(key);
 
@@ -801,7 +809,9 @@ static int _iniparser_section_process(FILE* file, INIParserTextBuffer* buffer, I
 
 		if (!_iniparser_is_section_key_char(current_character))
 		{
-			continue;
+			fprintf(stderr, "\n[INIParser] Error: Section name cannot contain characters other than letters and digits.\n");
+
+			return INIPARSER_EXIT_FAILURE;
 		}
 
 		if (_iniparser_textbuffer_push(buffer, current_character))
@@ -812,9 +822,12 @@ static int _iniparser_section_process(FILE* file, INIParserTextBuffer* buffer, I
 
 	if (is_closed)
 	{
-		//TODO
+		if (buffer->size == INIPARSER_NULL)
+		{
+			fprintf(stderr, "\n[INIParser] Error: Section name cannot be empty.\n");
 
-		//error if name is empty
+			return INIPARSER_EXIT_FAILURE;
+		}
 
 		*current_section = _iniparser_master_container_create_section(master, _iniparser_textbuffer_get_buffer(buffer));
 
@@ -864,7 +877,7 @@ static int _iniparser_config_process(FILE* file, INIFile* ini_file)
 	while ((current_character = fgetc(file)) != EOF)
 	{
 
-		if (_iniparser_left_trim(current_character))
+		if (_iniparser_whitespace_char(current_character))
 		{
 			continue;
 		}
@@ -949,9 +962,9 @@ void inifile_destroy(INIFile* ini_file)
 	ini_file->data = INIPARSER_NULL;
 };
 
-const char* inifile_get(INIFile* ini_file, const char* name, const char* key)
+const char* inifile_get(INIFile* ini_file, const char* section, const char* key)
 {
-	INIParserSectionContainer* section_data = _iniparser_master_container_get_section(ini_file->data, name);
+	INIParserSectionContainer* section_data = _iniparser_master_container_get_section(ini_file->data, section);
 
 	if (section_data != INIPARSER_NULL)
 	{
@@ -963,43 +976,65 @@ const char* inifile_get(INIFile* ini_file, const char* name, const char* key)
 		}
 		else
 		{
-			fprintf(stderr, "\n[INIParser] Error: Failed to find key: '%s' in section: '%s'.\n", key, name);
+			fprintf(stderr, "\n[INIParser] Error: Failed to find key: '%s' in section: '%s'.\n", key, section);
+
+			fprintf(stderr, "[INIParser] at inifile_get() where section='%s', key='%s'.\n", section, key);
 			
 			return INIPARSER_NULL;
 		}
 	}
 	else
 	{
+		fprintf(stderr, "[INIParser] at inifile_get() where section='%s', key='%s'.\n", section, key);
+
 		return INIPARSER_NULL;
 	}
 };
 
-int inifile_set(INIFile* ini_file, const char* section, const char* key, const char* value)
+void inifile_print_key(INIFile* ini_file, const char* section, const char* key)
 {
-	return INIPARSER_EXIT_SUCCESS;
+	const char* value = inifile_get(ini_file, section, key);
+
+	if (value != INIPARSER_NULL)
+	{
+		printf("key: '%s' value: '%s' type: 'string'\n", key, value);
+	}
 };
 
-static inline void _inifile_display_key(const char* key, const char* value)
-{
-	printf("key: '%s' value: '%s' type: 'string'\n", key, value);
-}
 
+/*
+int inifile_set(INIFile* ini_file, const char* section, const char* key, const char* value)
+{
+	INIParserSectionContainer* section_data = _iniparser_master_container_get_section(ini_file->data, section);
+	if (section_data != INIPARSER_NULL)
+	{
+		_iniparser_section_container_set(section_data, key, value);
+	}
+	else
+	{
+		fprintf(stderr, "[INIParser] at inifile_set() where section='%s', key='%s' value='%s'.\n", section, key, value);
+		return INIPARSER_NULL;
+	}
+};
+*/
+
+/*
 static inline void _inifile_display_section(INIParserSectionContainer* section_data, const char* name)
 {
 	printf("section: '%s'\n", name);
-
 	for (unsigned int i = 0; i < INIPARSER_SECTION_BUFFER_LIMIT; i++)
 	{
 		if (section_data->entries[i])
 		{
 			_inifile_display_key(section_data->entries[i]->key, section_data->entries[i]->value);
-
 			//TODO
 			//ADD NEXT
 		}
 	}
 }
+*/
 
+/*
 void inifile_print(INIFile* ini_file)
 {
 	for (unsigned int i = 0; i < INIPARSER_MASTER_BUFFER_LIMIT; i++)
@@ -1007,35 +1042,31 @@ void inifile_print(INIFile* ini_file)
 		if (ini_file->data->entries[i])
 		{
 			INIParserSectionContainer* section_data = ini_file->data->entries[i]->section;
-
 			_inifile_display_section(section_data, ini_file->data->entries[i]->name);
-
 			//TODO
 			//ADD NEXT
 		}
 	}
 };
+*/
 
+/*
 void inifile_print_section(INIFile* ini_file, const char* name)
 {
 	INIParserSectionContainer* section_data = _iniparser_master_container_get_section(ini_file->data, name);
-
 	if (section_data != INIPARSER_NULL)
 	{
 		_inifile_display_section(section_data, name);
 	}
 };
+*/
 
-void inifile_print_key(INIFile* ini_file, const char* section, const char* key)
-{
-	_inifile_display_key(key, inifile_get(ini_file, section, key));
-};
-
+/*
 int inifile_save(const char* file_path)
 {
 	//TODO CALL GENERATE DATA 
-
 	return INIPARSER_EXIT_SUCCESS;
 };
+*/
 
 #endif /* INIPARSER_H */
