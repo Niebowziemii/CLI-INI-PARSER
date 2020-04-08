@@ -1,4 +1,4 @@
-# console INI-Parser 
+# CLI INI-Parser 
 ### Authors 
 ##### Rafał Stachowiak - creator of the command line interface
 ##### Franciszek Olejnik - creator of the INIParser library https://github.com/FrankOil/INIParser
@@ -7,7 +7,7 @@
 Few steps how to use our application:
 1. compile file new_approach.c
 ```bash
-	cc -g -o new_approach new_approach.c
+cc -g -o new_approach new_approach.c
 ```
 2.  execute with the following to get a value of a key in a given section:
 ```bash
